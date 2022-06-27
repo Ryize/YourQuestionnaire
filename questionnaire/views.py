@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from .forms import QuizForm
 
 
 def index(request):
@@ -8,4 +9,13 @@ def index(request):
 
 @login_required
 def create_poll(request):
-    pass
+    if request.method == 'GET':
+        context = {
+            'form': QuizForm()
+        }
+        return render(request, 'questionnaire/create_poll.html', context)
+    form = QuizForm(request.POST)
+    if form.is_valid():
+        form.save()
+        return redirect('create_poll')
+    return redirect('create_poll')

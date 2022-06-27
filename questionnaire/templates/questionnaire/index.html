@@ -67,7 +67,9 @@
             <br>
           </ol>
           {% if user.is_authenticated %}
-          <center><input class="btn btn-primary p-2" type="submit" value="Создать опрос"></center>
+            <form action="{% url 'create_poll' %}">
+              <center><input class="btn btn-primary p-2" type="submit" value="Создать опрос"></center>
+            </form>
           {% else %}
             <center>Для создания опроса вам необходимо <a href="{% url 'account_login' %}">авторизоваться</a></center>
           {% endif %}
