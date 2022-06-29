@@ -20,7 +20,7 @@ class Quiz(models.Model):
 
 class Question(models.Model):
     question = models.CharField(max_length=64, verbose_name='Вопрос')
-    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE)
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, verbose_name='Опрос')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 
     def __str__(self):
@@ -33,8 +33,8 @@ class Question(models.Model):
 
 class AnswerQuestion(models.Model):
     answer = models.CharField(max_length=64, verbose_name='Ответ')
-    question = models.ForeignKey('Question', on_delete=models.CASCADE)
-    correct = models.BooleanField(default=False)
+    question = models.ForeignKey('Question', on_delete=models.CASCADE, verbose_name='Вопрос')
+    correct = models.BooleanField(default=False, verbose_name='Это правильный ответ?')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 
     def __str__(self):
