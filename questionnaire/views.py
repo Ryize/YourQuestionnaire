@@ -16,6 +16,8 @@ def create_poll(request):
         return render(request, 'questionnaire/create_poll.html', context)
     form = QuizForm(request.POST)
     if form.is_valid():
-        form.save()
+        form_with_user = form.save(commit=False)
+        form_with_user.user = request.user
+        form_with_user.save()
         return redirect('create_poll')
     return redirect('create_poll')

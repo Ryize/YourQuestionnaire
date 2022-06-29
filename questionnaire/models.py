@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -6,6 +7,7 @@ class Quiz(models.Model):
     description = models.CharField(max_length=256, verbose_name='Описание')
     topic = models.CharField(max_length=64, verbose_name='Тема')
     lifetime = models.DateTimeField(verbose_name='Действует до')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 
     def __str__(self):
