@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import QuizForm, QuestionForm, AnswerForm
+from .models import Quiz
 
 
 def index(request):
@@ -33,8 +34,8 @@ def create_question(request):
     form = QuestionForm(request.POST)
     if form.is_valid():
         form.save()
-        return redirect('create_poll')
-    return redirect('create_poll')
+        return redirect('create_question')
+    return redirect('create_question')
 
 
 @login_required
@@ -49,3 +50,12 @@ def create_answer(request):
         form.save()
         return redirect('create_answer')
     return redirect('create_answer')
+
+
+@login_required
+def my_poll(request):
+    my_polls = Quiz.objects.filter(user=request.user).prefetch_related()
+    context = {
+        'my_polls': my_polls,
+    }
+    return render(request, 'questionnaire/my_poll.html', context)

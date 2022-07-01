@@ -1,0 +1,115 @@
+{% extends 'questionnaire/template/base.html' %}
+
+{% block content %}
+    <style>
+        h1 {
+            margin-bottom: 2%;
+        }
+
+        .bullet {
+            margin-left: 0;
+            list-style: none;
+            counter-reset: li;
+            padding-top: 10%;
+        }
+
+        .bullet li {
+            position: relative;
+            margin-bottom: 1.5em;
+            border: 3px solid #CADFCF;
+            padding: 0.6em;
+            border-radius: 4px;
+            background: #FEFEFE;
+            color: #231F20;
+            font-family: "Trebuchet MS", "Lucida Sans";
+        }
+
+        .bullet li:before {
+            position: absolute;
+            top: -0.7em;
+            padding-left: 0.4em;
+            padding-right: 0.4em;
+            font-size: 16px;
+            font-weight: bold;
+            color: #DCC24B;
+            background: #FEFEFE;
+            border-radius: 50%;
+            counter-increment: li;
+            content: counter(li);
+        }
+
+        .pointer{
+            cursor: pointer;
+        }
+
+        #row {
+            width: 100%;
+        }
+    </style>
+    <body lang="ru">
+    <div class="row" id="row">
+        <div class="col-xs-1 col-sm-1 col-md-1 col-lg-1"></div>
+        <div class="col-xs-10 col-sm-12 col-md-10 col-lg-10">
+            <ol class="bullet">
+
+                <center><h1>Мои опросы</h1></center>
+
+                {% for poll in my_polls %}
+
+                    <li>
+                        <span>{{ poll.title }}</span>
+                        <br>
+                        <span><small>{{ poll.description }}</small></span>
+                        <hr>
+                        <p><label class="pointer" id="{{ forloop.counter }}" onclick="showQuestion(this, 'quest-'+this.id)"><strong><i>Нажмите
+                            для
+                            отображения вопросов и ответов</i></strong></label></p>
+                        <div id="quest-{{ forloop.counter }}" style="display: none;">
+                            {% for question in poll.questions.all %}
+
+                                <p>Вопрос: <strong>{{ question.question }}</strong></p>
+                                <label title="{{ question.question }}">Варианты ответов:</label>
+                                {% for answer in question.answers.all %}
+                                    {% if answer.correct %}
+                                        <p title="Это правильный ответ">{{ forloop.counter }}) {{ answer.answer }} ✅</p>
+                                    {% else %}
+                                        <p title="Это не правильный ответ">{{ forloop.counter }}) {{ answer.answer }}
+                                            ❌</p>
+                                    {% endif %}
+                                {% endfor %}
+                                <br>
+                                <hr>
+
+                            {% endfor %}
+                            <label style="float: right"><small>Можно пройти до: {{ poll.lifetime }}</small></label>
+                            <br>
+                        </div>
+                        <label style="float: right"><small>Создан: {{ poll.created_at }}</small></label>
+                        <br>
+
+
+                    </li>
+
+                {% endfor %}
+
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function showQuestion(element, id) {
+            el = document.getElementById(id)
+            if (el.style.display === 'none') {
+                el.style = 'display: block;'
+                element.textContent = 'Нажмите для скрытия вопросов и ответов'
+            } else {
+                el.style = 'display: none;'
+                element.textContent = 'Нажмите для отображения вопросов и ответов'
+            }
+        }
+    </script>
+
+    </body>
+
+
+{% endblock %}

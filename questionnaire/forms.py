@@ -24,7 +24,7 @@ class QuestionForm(ModelForm):
         model = Question
         fields = ('question', 'quiz',)
         widgets = {
-            'quiz': Select(attrs={'class': 'form-control', 'placeholder': 'Не выбрано!'}),
+            'quiz': Select(attrs={'class': 'form-control'}),
         }
 
 
