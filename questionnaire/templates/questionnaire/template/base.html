@@ -1,7 +1,17 @@
-{% block header %}
-    {% include "questionnaire/includes/header.html" %}
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        {% block head %}
 
-{% block content %}
+        {% endblock %}
+    </head>
+    <body>
+        {% block header %}
+            {% include "questionnaire/includes/header.html" %}
+        {% endblock %}
 
-{% endblock %}
+        {% block content %}
+            <center><h1>Стартовая страница base.html</h1></center>
+        {% endblock %}
+    </body>
+</html>

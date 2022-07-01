@@ -54,7 +54,7 @@ def create_answer(request):
 
 @login_required
 def my_poll(request):
-    my_polls = Quiz.objects.filter(user=request.user).prefetch_related()
+    my_polls = Quiz.objects.filter(user=request.user).order_by('-created_at').prefetch_related()
     context = {
         'my_polls': my_polls,
     }
