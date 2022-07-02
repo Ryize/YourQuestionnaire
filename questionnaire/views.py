@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import QuizForm, QuestionForm, AnswerForm
 from .models import Quiz
@@ -59,3 +59,12 @@ def my_poll(request):
         'my_polls': my_polls,
     }
     return render(request, 'questionnaire/my_poll.html', context)
+
+
+@login_required
+def take_poll(request, poll_id):
+    poll = get_object_or_404(Quiz, pk=poll_id)
+    context = {
+        'poll': poll,
+    }
+    return render(request, 'questionnaire/take_poll.html', context)

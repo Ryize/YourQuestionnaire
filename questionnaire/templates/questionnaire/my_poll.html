@@ -47,7 +47,16 @@
                         </div>
                         <label style="float: right"><small>Создан: {{ poll.created_at }}</small></label>
                         <br>
-
+                        <p onclick="copyURL('copy_url-{{ poll.pk }}')">
+                            <input type="hidden" value="http://{{ request.get_host }}{% url 'take_poll' poll.pk %}" id="copy_url-{{ poll.pk }}">
+                            <small>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                     class="bi bi-subtract" viewBox="0 0 16 16">
+                                    <path d="M0 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2z"/>
+                                </svg>
+                                <label class="pointer">Скопировать ссылку</label>
+                            </small>
+                        </p>
 
                     </li>
 
@@ -67,6 +76,19 @@
                 el.style = 'display: none;'
                 element.innerHTML = '<strong>Нажмите для отображения вопросов и ответов</strong>'
             }
+        }
+
+        function copyURL(id) {
+            const str = document.getElementById(id).value;
+            const el = document.createElement('textarea');
+            el.value = str;
+            el.setAttribute('readonly', '');
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
         }
     </script>
 
