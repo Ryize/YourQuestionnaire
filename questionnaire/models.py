@@ -38,8 +38,24 @@ class AnswerQuestion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
 
     def __str__(self):
-        return f'{self.title}'
+        return f'{self.answer}'
 
     class Meta:
         verbose_name = 'Ответ'
         verbose_name_plural = 'Ответы'
+
+
+class UserAnswer(models.Model):
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, verbose_name='Опрос', related_name='user_quiz', null=True)
+    question = models.ForeignKey('Question', on_delete=models.CASCADE, verbose_name='Вопрос',
+                                 related_name='user_question', null=True)
+    answers = models.ForeignKey('AnswerQuestion', on_delete=models.CASCADE, verbose_name='Ответ',
+                                 related_name='user_answer', null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создан')
+
+
+class PassedPolls(models.Model):
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, verbose_name='Опрос', related_name='passed_quiz')
+    passed_user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Закончил опрос')
