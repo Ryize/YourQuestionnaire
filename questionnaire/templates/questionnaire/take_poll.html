@@ -1,5 +1,6 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 
 <head>
     <meta charset="UTF-8">
@@ -7,7 +8,7 @@
     <meta name="viewport" content=
             "width=device-width, initial-scale=1.0">
     <title>
-        Build a Survey Form using HTML and CSS
+        {{ poll.title }} - YourQuestionnaire
     </title>
     {% include 'questionnaire/includes/header.html' %}
     <style>
@@ -15,18 +16,17 @@
         /* Styling the Body element i.e. Color,
         Font, Alignment */
         body {
-            background-color: #05c46b;
             font-family: Verdana;
             text-align: center;
         }
 
         /* Styling the Form (Color, Padding, Shadow) */
-        form {
+        aside {
             background-color: #fff;
             max-width: 500px;
             margin: 50px auto;
             padding: 30px 20px;
-            box-shadow: 2px 5px 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 2px 5px 10px rgba(110, 0, 0, 0.5);
         }
 
         /* Styling form-control Class */
@@ -74,39 +74,73 @@
             margin-top: 50px;
             margin-bottom: 20px;
         }
+
+        .btn-link {
+            border: none;
+            outline: none;
+            background: none;
+            cursor: pointer;
+            color: #0000EE;
+            padding: 0;
+            margin: 0;
+            text-decoration: none;
+            font-family: inherit;
+            font-size: inherit;
+            width: auto;
+            height: auto;
+        }
     </style>
+    <link rel="stylesheet" href="{% static 'css/dynamic_background.css' %}">
 </head>
 
-<body>
+<body style="height: 100vh;">
+{% include 'questionnaire/includes/flash_messages.html' %}
+<br>
+<div class="text-center">
 <h1>{{ poll.title }}</h1>
 <small>{{ poll.description }}</small>
-<br>
-<small>{{ question.pk }}</small>
+</div>
+<aside>
+    <form id="form" method="post" action="{% url 'take_poll' poll.pk %}">
 
-<form id="form" method="post" action="{% url 'take_poll' poll.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="number_question" value="{{ question.pk }}">
 
-    {% csrf_token %}
-    <input type="hidden" name="number_question" value="{{ question.pk }}">
+        <div class="form-control border-0">
 
-    <div class="form-control border-0">
+            <div class="form-control">
+                <label>{{ question.question }}</label>
+                <label for="inp-1">
+                    {% for answer in question.answers.all %}
+                        <input type="radio"
+                               name="answers" value="{{ answer.pk }}" id="number-{{ question.pk }}" class="m-2">
+                        <span>{{ answer.answer }}</span><br>
+                    {% endfor %}
+                </label>
+            </div>
 
-        <div class="form-control">
-            <label>{{ question.question }}</label>
-            <!-- Input Type Checkbox -->
-            <label for="inp-1">
-                {% for answer in question.answers.all %}
-                    <input type="radio"
-                           name="answers" value="{{ answer.pk }}" id="number-{{ question.pk }}" class="m-2">
-                    <span>{{ answer.answer }}</span><br>
-                {% endfor %}
-            </label>
+            <button type="submit" value="submit">
+                Сохранить ответ
+            </button>
         </div>
+    </form>
+    {% if poll.questions.all.0.pk != question.pk %}
+        <form method="post" action="{% url 'take_poll' poll.pk %}" onclick="this.submit()" id="back">
+            {% csrf_token %}
+            <input type="hidden" name="number_question" value="{{ question.pk|add:-1 }}" form="back">
+            <input type="hidden" name="redirect" value="1" form="back">
+            <button type="submit" name="your_name" value="your_value" class="btn-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                     class="bi bi-arrow-return-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd"
+                          d="M14.5 1.5a.5.5 0 0 1 .5.5v4.8a2.5 2.5 0 0 1-2.5 2.5H2.707l3.347 3.346a.5.5 0 0 1-.708.708l-4.2-4.2a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 8.3H12.5A1.5 1.5 0 0 0 14 6.8V2a.5.5 0 0 1 .5-.5z"/>
+                </svg>
+                Назад
+            </button>
 
-        <button type="submit" value="submit">
-            Сохранить ответ
-        </button>
-    </div>
-</form>
+        </form>
+    {% endif %}
+</aside>
 </body>
 
 </html>

@@ -1,8 +1,9 @@
+from django.contrib import messages
 from django.http import HttpResponseNotFound
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .forms import QuizForm, QuestionForm, AnswerForm
-from .models import Quiz, UserAnswer, Question
+from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion
 
 
 def index(request):
@@ -21,7 +22,9 @@ def create_poll(request):
         form_with_user = form.save(commit=False)
         form_with_user.user = request.user
         form_with_user.save()
+        messages.success(request, 'Вы успешно создали опрос!')
         return redirect('create_question')
+    messages.error(request, 'Хм, что-то не то!')
     return redirect('create_poll')
 
 
@@ -35,7 +38,9 @@ def create_question(request):
     form = QuestionForm(request.POST)
     if form.is_valid():
         form.save()
+        messages.info(request, 'Вы создали вопрос!')
         return redirect('create_question')
+    messages.error(request, 'Хм, что-то не то!')
     return redirect('create_question')
 
 
@@ -49,7 +54,9 @@ def create_answer(request):
     form = AnswerForm(request.POST)
     if form.is_valid():
         form.save()
+        messages.info(request, 'Вы создали ответ на вопрос!')
         return redirect('create_answer')
+    messages.error(request, 'Хм, что-то не то!')
     return redirect('create_answer')
 
 
@@ -58,6 +65,8 @@ def my_poll(request):
     my_polls = Quiz.objects.filter(user=request.user).order_by('-created_at').prefetch_related()
     context = {
         'my_polls': my_polls,
+        'UserAnswer': UserAnswer,
+        'PassedPolls': PassedPolls,
     }
     return render(request, 'questionnaire/my_poll.html', context)
 
@@ -65,6 +74,8 @@ def my_poll(request):
 @login_required
 def take_poll(request, poll_id):
     poll = get_object_or_404(Quiz, pk=poll_id)
+    if PassedPolls.objects.filter(quiz=poll, passed_user=request.user):
+        return HttpResponseNotFound("Вы уже прошли этот опрос!")
     for question in poll.questions.all():
         if len(question.answers.all()) > 0:
             break
@@ -74,21 +85,26 @@ def take_poll(request, poll_id):
     if request.method == 'POST':
         number_question = request.POST.get('number_question')
         answers = request.POST.get('answers')
+
+        all_question = poll.questions.all()
+        if request.POST.get('redirect'):
+            question = all_question.filter(pk=int(number_question)).first()
+            context = {
+                'poll': poll,
+                'question': question,
+            }
+            return render(request, 'questionnaire/take_poll.html', context)
+
         for i in request.POST.lists():
             answers = i[1] if i[0] == 'answers' else []
-        for question in poll.questions.all():
-            correct_answers = question.answers.filter(correct=True)
-            if correct_answers:
-                for i in correct_answers:
-                    if str(i.pk) in answers:
-                        answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
-                                            answers=i, user=request.user)
-                        answer.save()
-                    else:
-                        pass
-        all_question = poll.questions.all()
-        question = all_question.filter(pk=int(number_question)+1).first()
+        answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
+                            answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
+        answer.save()
+        question = all_question.filter(pk=int(number_question) + 1).first()
         if not question:
+            passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
+            passed_quiz.save()
+            messages.info(request, 'Вы успешно прошли опрос!')
             return redirect('index')
     context = {
         'poll': poll,
