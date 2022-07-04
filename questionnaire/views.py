@@ -2,7 +2,8 @@ import datetime
 from typing import Union
 
 from django.contrib import messages
-from django.http import HttpResponseNotFound, HttpResponse
+from django.forms import ModelForm
+from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -40,12 +41,7 @@ def create_question(request):
         }
         return render(request, 'questionnaire/create_question.html', context)
     form = QuestionForm(request.POST)
-    if form.is_valid():
-        form.save()
-        messages.info(request, 'Вы создали вопрос!')
-        return redirect('create_question')
-    messages.error(request, 'Хм, что-то не то!')
-    return redirect('create_question')
+    return process_form(request, form)
 
 
 @login_required
@@ -56,12 +52,7 @@ def create_answer(request):
         }
         return render(request, 'questionnaire/create_answer.html', context)
     form = AnswerForm(request.POST)
-    if form.is_valid():
-        form.save()
-        messages.info(request, 'Вы создали ответ на вопрос!')
-        return redirect('create_answer')
-    messages.error(request, 'Хм, что-то не то!')
-    return redirect('create_answer')
+    return process_form(request, form, message_success='Вы создали ответ на вопрос!', func_redirect='create_answer')
 
 
 @login_required
@@ -87,16 +78,18 @@ def take_poll(request, poll_id):
     answers = request.POST.get('answers')
 
     all_question = poll.questions.all()
+    # Обрабатываем кнопку "Назад", если нажата, возвращаем предыдущий вопрос
     if request.POST.get('redirect'):
         question = all_question.filter(pk=int(number_question)).first()
         return get_standart_render(request, poll, question)
 
     for i in request.POST.lists():
-        answers = i[1] if i[0] == 'answers' else []
+        answers = i[1] if i[0] == 'answers' else []  # Получаем ответ, который дал пользователь
     answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
                         answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
     answer.save()
     question = all_question.filter(pk=int(number_question) + 1).first()
+    # Проверяем, есть ли вопрос, есл нет, то сообщаем об успешном прохождении опроса
     if not question:
         passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
         passed_quiz.save()
@@ -130,6 +123,17 @@ def get_standart_render(request, poll: Quiz, question: Question) -> HttpResponse
         'question': question,
     }
     return render(request, 'questionnaire/take_poll.html', context)
+
+
+def process_form(request, form: ModelForm, message_success: str = 'Вы создали вопрос!',
+                 message_error: str = 'Хм, что-то не то!',
+                 func_redirect: str = 'create_question') -> HttpResponseRedirect:
+    if form.is_valid():
+        form.save()
+        messages.info(request, message_success)
+        return redirect(func_redirect)
+    messages.error(request, message_error)
+    return redirect(func_redirect)
 
 
 def _check_poll_lifetime(poll: Quiz) -> Union[bool, HttpResponseNotFound]:
