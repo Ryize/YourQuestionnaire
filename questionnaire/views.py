@@ -1,7 +1,11 @@
+import datetime
+from typing import Union
+
 from django.contrib import messages
 from django.http import HttpResponseNotFound
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .forms import QuizForm, QuestionForm, AnswerForm
 from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion
 
@@ -74,14 +78,9 @@ def my_poll(request):
 @login_required
 def take_poll(request, poll_id):
     poll = get_object_or_404(Quiz, pk=poll_id)
-    if PassedPolls.objects.filter(quiz=poll, passed_user=request.user):
-        return HttpResponseNotFound("Вы уже прошли этот опрос!")
-    for question in poll.questions.all():
-        if len(question.answers.all()) > 0:
-            break
-    else:
-        return HttpResponseNotFound("В этом опросе нет вопросов с ответами")
-
+    question = check_possibility_passing_poll(request, poll)
+    if isinstance(question, HttpResponseNotFound):
+        return question
     if request.method == 'POST':
         number_question = request.POST.get('number_question')
         answers = request.POST.get('answers')
@@ -111,3 +110,30 @@ def take_poll(request, poll_id):
         'question': question,
     }
     return render(request, 'questionnaire/take_poll.html', context)
+
+
+def check_possibility_passing_poll(request, poll: Quiz) -> Union[Question, HttpResponseNotFound]:
+    """
+    Используется для проверки возможности пройти определённый опрос пользователем.
+    request: WSGIRequest
+    return: Question (вопрос на который пользователь будет отвечать)
+            or HttpResponseNotFound (сообщение о невозможности пройти опрос).
+    """
+    check_poll_lifetime = _check_poll_lifetime(poll)
+    if not isinstance(check_poll_lifetime, bool):
+        return check_poll_lifetime
+    if PassedPolls.objects.filter(quiz=poll, passed_user=request.user):
+        return HttpResponseNotFound("Вы уже прошли этот опрос!")
+    for question in poll.questions.all():
+        if len(question.answers.all()) > 0:
+            return question
+    return HttpResponseNotFound("В этом опросе нет вопросов с ответами")
+
+
+def _check_poll_lifetime(poll: Quiz) -> Union[bool, HttpResponseNotFound]:
+    """ Проверяем не кончился ли срок жизни опроса. """
+    date_now = timezone.now()
+    date_now.astimezone(timezone.utc).replace(tzinfo=None)
+    if poll.lifetime <= date_now:
+        return HttpResponseNotFound("Срок действия опроса истёк!")
+    return True
