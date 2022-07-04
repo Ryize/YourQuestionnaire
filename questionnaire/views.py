@@ -2,7 +2,7 @@ import datetime
 from typing import Union
 
 from django.contrib import messages
-from django.http import HttpResponseNotFound
+from django.http import HttpResponseNotFound, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -81,35 +81,28 @@ def take_poll(request, poll_id):
     question = check_possibility_passing_poll(request, poll)
     if isinstance(question, HttpResponseNotFound):
         return question
-    if request.method == 'POST':
-        number_question = request.POST.get('number_question')
-        answers = request.POST.get('answers')
+    if request.method == 'GET':
+        return get_standart_render(request, poll, question)
+    number_question = request.POST.get('number_question')
+    answers = request.POST.get('answers')
 
-        all_question = poll.questions.all()
-        if request.POST.get('redirect'):
-            question = all_question.filter(pk=int(number_question)).first()
-            context = {
-                'poll': poll,
-                'question': question,
-            }
-            return render(request, 'questionnaire/take_poll.html', context)
+    all_question = poll.questions.all()
+    if request.POST.get('redirect'):
+        question = all_question.filter(pk=int(number_question)).first()
+        return get_standart_render(request, poll, question)
 
-        for i in request.POST.lists():
-            answers = i[1] if i[0] == 'answers' else []
-        answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
-                            answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
-        answer.save()
-        question = all_question.filter(pk=int(number_question) + 1).first()
-        if not question:
-            passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
-            passed_quiz.save()
-            messages.info(request, 'Вы успешно прошли опрос!')
-            return redirect('index')
-    context = {
-        'poll': poll,
-        'question': question,
-    }
-    return render(request, 'questionnaire/take_poll.html', context)
+    for i in request.POST.lists():
+        answers = i[1] if i[0] == 'answers' else []
+    answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
+                        answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
+    answer.save()
+    question = all_question.filter(pk=int(number_question) + 1).first()
+    if not question:
+        passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
+        passed_quiz.save()
+        messages.info(request, 'Вы успешно прошли опрос!')
+        return redirect('index')
+    return get_standart_render(request, poll, question)
 
 
 def check_possibility_passing_poll(request, poll: Quiz) -> Union[Question, HttpResponseNotFound]:
@@ -128,6 +121,15 @@ def check_possibility_passing_poll(request, poll: Quiz) -> Union[Question, HttpR
         if len(question.answers.all()) > 0:
             return question
     return HttpResponseNotFound("В этом опросе нет вопросов с ответами")
+
+
+def get_standart_render(request, poll: Quiz, question: Question) -> HttpResponse:
+    """ Возвращает стандартную страницу для ответа на вопрос в опросе. """
+    context = {
+        'poll': poll,
+        'question': question,
+    }
+    return render(request, 'questionnaire/take_poll.html', context)
 
 
 def _check_poll_lifetime(poll: Quiz) -> Union[bool, HttpResponseNotFound]:
