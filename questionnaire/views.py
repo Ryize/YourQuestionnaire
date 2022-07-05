@@ -66,6 +66,16 @@ def my_poll(request):
 
 
 @login_required
+def go_poll(request):
+    if request.method == 'GET':
+        return render(request, 'questionnaire/go_poll.html')
+    if not request.POST.get('poll_id') or not request.POST.get('poll_id').isdigit():
+        messages.error(request, 'Значение поля id опроса не корректно!')
+        return render(request, 'questionnaire/go_poll.html')
+    return redirect('take_poll', request.POST.get('poll_id'))
+
+
+@login_required
 def take_poll(request, poll_id):
     poll = get_object_or_404(Quiz, pk=poll_id)
     question = check_possibility_passing_poll(request, poll)
