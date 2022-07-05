@@ -42,6 +42,7 @@ class AnswerForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['question'].empty_label = "Не выбрано!"
+        self.fields['question'].queryset = self.fields['question'].queryset.order_by('-pk')
 
     class Meta:
         model = AnswerQuestion

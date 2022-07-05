@@ -151,14 +151,18 @@ def get_standart_render(request, poll: Quiz, question: Question) -> HttpResponse
     return render(request, 'questionnaire/take_poll.html', context)
 
 
-def process_form(request, form: ModelForm, id: int, message_success: str = 'Вы создали вопрос!',
+def process_form(request, form: ModelForm, id: Union[None, int] = None, message_success: str = 'Вы создали вопрос!',
                  message_error: str = 'Хм, что-то не то!',
                  func_redirect: str = 'create_question', ) -> HttpResponseRedirect:
     if form.is_valid():
         form.save()
         messages.info(request, message_success)
+        if not id:
+            return redirect(func_redirect)
         return redirect(func_redirect, id)
     messages.error(request, message_error)
+    if not id:
+        return redirect(func_redirect)
     return redirect(func_redirect, id)
 
 
