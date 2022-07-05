@@ -77,7 +77,11 @@ def go_poll(request):
 
 @login_required
 def take_poll(request, poll_id):
-    poll = get_object_or_404(Quiz, pk=poll_id)
+    try:
+        poll = Quiz.objects.get(pk=poll_id)
+    except Quiz.DoesNotExist:
+        messages.error(request, 'Вы указали не верный id опроса!')
+        return redirect('go_poll')
     question = check_possibility_passing_poll(request, poll)
     if isinstance(question, HttpResponseNotFound):
         return question
@@ -85,6 +89,10 @@ def take_poll(request, poll_id):
         return get_standart_render(request, poll, question)
     number_question = request.POST.get('number_question')
     answers = request.POST.get('answers')
+
+    if not (number_question and answers):
+        messages.error(request, 'Вы передали не все параметры!')
+        return get_standart_render(request, poll, question)
 
     all_question = poll.questions.all()
     # Обрабатываем кнопку "Назад", если нажата, возвращаем предыдущий вопрос
@@ -97,13 +105,21 @@ def take_poll(request, poll_id):
     answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
                         answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
     answer.save()
-    question = all_question.filter(pk=int(number_question) + 1).first()
-    # Проверяем, есть ли вопрос, есл нет, то сообщаем об успешном прохождении опроса
-    if not question:
-        passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
-        passed_quiz.save()
-        messages.info(request, 'Вы успешно прошли опрос!')
-        return redirect('index')
+
+    number_iter = 1
+    while True:
+        question = all_question.filter(pk=int(number_question) + number_iter).first()
+
+        # Проверяем, есть ли вопрос, если нет, то сообщаем об успешном прохождении опроса
+        if not question:
+            passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
+            passed_quiz.save()
+            messages.info(request, 'Вы успешно прошли опрос!')
+            return redirect('index')
+        if not question.answers.all():
+            number_iter += 1
+            continue
+        break
     return get_standart_render(request, poll, question)
 
 
