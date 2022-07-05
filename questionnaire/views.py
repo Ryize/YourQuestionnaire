@@ -27,20 +27,21 @@ def create_poll(request):
         form_with_user.user = request.user
         form_with_user.save()
         messages.success(request, 'Вы успешно создали опрос!')
-        return redirect('create_question')
+        return redirect('create_question', form_with_user.pk)
     messages.error(request, 'Хм, что-то не то!')
     return redirect('create_poll')
 
 
 @login_required
-def create_question(request):
+def create_question(request, quiz_id):
+    quiz = Quiz.objects.filter(pk=quiz_id).all()
     if request.method == 'GET':
         context = {
-            'form': QuestionForm()
+            'form': QuestionForm(quiz),
         }
         return render(request, 'questionnaire/create_question.html', context)
-    form = QuestionForm(request.POST)
-    return process_form(request, form)
+    form = QuestionForm(None, request.POST)
+    return process_form(request, form, quiz_id)
 
 
 @login_required
@@ -150,15 +151,15 @@ def get_standart_render(request, poll: Quiz, question: Question) -> HttpResponse
     return render(request, 'questionnaire/take_poll.html', context)
 
 
-def process_form(request, form: ModelForm, message_success: str = 'Вы создали вопрос!',
+def process_form(request, form: ModelForm, id: int, message_success: str = 'Вы создали вопрос!',
                  message_error: str = 'Хм, что-то не то!',
-                 func_redirect: str = 'create_question') -> HttpResponseRedirect:
+                 func_redirect: str = 'create_question', ) -> HttpResponseRedirect:
     if form.is_valid():
         form.save()
         messages.info(request, message_success)
-        return redirect(func_redirect)
+        return redirect(func_redirect, id)
     messages.error(request, message_error)
-    return redirect(func_redirect)
+    return redirect(func_redirect, id)
 
 
 def _check_poll_lifetime(poll: Quiz) -> Union[bool, HttpResponseNotFound]:
