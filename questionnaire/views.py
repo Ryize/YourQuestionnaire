@@ -6,6 +6,8 @@ from django.http import HttpResponseNotFound, HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.views.generic import ListView
+
 from .forms import QuizForm, QuestionForm, AnswerForm
 from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion
 
@@ -66,6 +68,35 @@ def my_poll(request):
     return render(request, 'questionnaire/my_poll.html', context)
 
 
+class QuizListView(ListView):
+    model = Quiz
+    template_name = 'questionnaire/my_poll.html'
+    context_object_name = 'my_polls'
+    paginate_by = 16
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            my_polls = Quiz.objects.filter(user=self.request.user).order_by('-created_at').prefetch_related()
+            return my_polls
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['UserAnswer'] = UserAnswer
+        context['PassedPolls'] = PassedPolls
+
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated == True:
+            if request.method.lower() in self.http_method_names:
+                handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
+            else:
+                handler = self.http_method_not_allowed
+            return handler(request, *args, **kwargs)
+        else:
+            return redirect("account_login")
+
+
 @login_required
 def go_poll(request):
     if request.method == 'GET':
@@ -116,7 +147,7 @@ def take_poll(request, poll_id):
             passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
             passed_quiz.save()
             messages.info(request, 'Вы успешно прошли опрос!')
-            return redirect('index')
+            return redirect('questionnaireIndex')
         if not question.answers.all():
             number_iter += 1
             continue
