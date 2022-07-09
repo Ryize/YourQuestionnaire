@@ -1,3 +1,4 @@
+from lib2to3.fixes.fix_input import context
 from typing import Union
 
 from django.contrib import messages
@@ -9,7 +10,7 @@ from django.utils import timezone
 from django.views.generic import ListView
 
 from .forms import QuizForm, QuestionForm, AnswerForm
-from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion
+from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion, Rating
 
 
 class QuizListView(ListView):
@@ -152,12 +153,31 @@ def take_poll(request, poll_id):
             passed_quiz = PassedPolls(quiz=poll, passed_user=request.user)
             passed_quiz.save()
             messages.info(request, 'Вы успешно прошли опрос!')
-            return redirect('questionnaireIndex')
+            return redirect('rating', poll_id)
         if not question.answers.all():
             number_iter += 1
             continue
         break
     return get_standart_render(request, poll, question)
+
+
+def rating(request, poll_id: int):
+    quiz = Quiz.objects.get(pk=poll_id)
+    if request.method == 'POST':
+        try:
+            rating_quiz = Rating.objects.get(user=request.user, quiz=quiz)
+            rating_quiz.delete()
+        except:
+            pass
+        rating_quiz = Rating(answer_number=request.POST.get('rating'), comment=request.POST.get('comment'),
+                             quiz=quiz, user=request.user)
+        rating_quiz.save()
+        messages.success(request, 'Вы успешно оставили отзыв!')
+        return redirect('questionnaireIndex')
+    context = {
+        'poll': quiz
+    }
+    return render(request, 'questionnaire/rating.html', context)
 
 
 def check_possibility_passing_poll(request, poll: Quiz) -> Union[Question, HttpResponseNotFound]:

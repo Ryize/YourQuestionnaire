@@ -9,4 +9,5 @@ urlpatterns = [
     path('my_polls/', QuizListView.as_view(), name='my_poll'),
     path('go_poll/', go_poll, name='go_poll'),
     path('take_poll/<int:poll_id>', take_poll, name='take_poll'),
+    path('rating/<int:poll_id>', rating, name='rating'),
 ]

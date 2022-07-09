@@ -59,3 +59,10 @@ class PassedPolls(models.Model):
     quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, verbose_name='Опрос', related_name='passed_quiz')
     passed_user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Закончил опрос')
+
+
+class Rating(models.Model):
+    answer_number = models.IntegerField(verbose_name='Число звёзд')
+    comment = models.CharField(max_length=750, blank=True, default='Комментарий не добавлен!')
+    quiz = models.ForeignKey('Quiz', on_delete=models.CASCADE, verbose_name='Опрос', related_name='rating')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
