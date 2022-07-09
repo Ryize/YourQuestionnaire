@@ -1,5 +1,6 @@
 {% extends 'questionnaire/template/base.html' %}
 {% load static %}
+{% load questionnaire_tags %}
 {% block head %}
     <link rel="stylesheet" href="{% static 'css/dynamic_background.css' %}">
     <link rel="stylesheet" href="{% static 'css/list_poll.css' %}">
@@ -81,6 +82,8 @@
 
                                     {% endfor %}
                                 </div>
+                                <hr>
+                                <p>{{ poll|average|safe }}</p>
                             {% endif %}
                         </div>
                         <br>

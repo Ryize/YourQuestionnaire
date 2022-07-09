@@ -12,6 +12,35 @@ from .forms import QuizForm, QuestionForm, AnswerForm
 from .models import Quiz, UserAnswer, Question, PassedPolls, AnswerQuestion
 
 
+class QuizListView(ListView):
+    model = Quiz
+    template_name = 'questionnaire/my_poll.html'
+    context_object_name = 'my_polls'
+    paginate_by = 16
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            my_polls = Quiz.objects.filter(user=self.request.user).order_by('-created_at').prefetch_related()
+            return my_polls
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['UserAnswer'] = UserAnswer
+        context['PassedPolls'] = PassedPolls
+
+        return context
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            if request.method.lower() in self.http_method_names:
+                handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
+            else:
+                handler = self.http_method_not_allowed
+            return handler(request, *args, **kwargs)
+        else:
+            return redirect("account_login")
+
+
 def index(request):
     return render(request, 'questionnaire/index.html')
 
@@ -68,35 +97,6 @@ def my_poll(request):
     return render(request, 'questionnaire/my_poll.html', context)
 
 
-class QuizListView(ListView):
-    model = Quiz
-    template_name = 'questionnaire/my_poll.html'
-    context_object_name = 'my_polls'
-    paginate_by = 16
-
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            my_polls = Quiz.objects.filter(user=self.request.user).order_by('-created_at').prefetch_related()
-            return my_polls
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['UserAnswer'] = UserAnswer
-        context['PassedPolls'] = PassedPolls
-
-        return context
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated == True:
-            if request.method.lower() in self.http_method_names:
-                handler = getattr(self, request.method.lower(), self.http_method_not_allowed)
-            else:
-                handler = self.http_method_not_allowed
-            return handler(request, *args, **kwargs)
-        else:
-            return redirect("account_login")
-
-
 @login_required
 def go_poll(request):
     if request.method == 'GET':
@@ -122,18 +122,23 @@ def take_poll(request, poll_id):
     number_question = request.POST.get('number_question')
     answers = request.POST.get('answers')
 
+    all_question = poll.questions.all()
+    # Обрабатываем кнопку "Назад", если нажата, возвращаем предыдущий вопрос
+    if request.POST.get('redirect') and number_question:
+        question = all_question.filter(pk=int(number_question)).first()
+        return get_standart_render(request, poll, question)
+
     if not (number_question and answers):
         messages.error(request, 'Вы передали не все параметры!')
         return get_standart_render(request, poll, question)
 
-    all_question = poll.questions.all()
-    # Обрабатываем кнопку "Назад", если нажата, возвращаем предыдущий вопрос
-    if request.POST.get('redirect'):
-        question = all_question.filter(pk=int(number_question)).first()
-        return get_standart_render(request, poll, question)
-
     for i in request.POST.lists():
         answers = i[1] if i[0] == 'answers' else []  # Получаем ответ, который дал пользователь
+    try:
+        UserAnswer.objects.get(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
+                               user=request.user).delete()
+    except:
+        pass
     answer = UserAnswer(quiz=poll, question=get_object_or_404(Question, pk=int(number_question)),
                         answers=AnswerQuestion.objects.filter(pk=int(answers[0]))[0], user=request.user)
     answer.save()
