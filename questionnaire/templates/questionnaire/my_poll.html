@@ -83,7 +83,7 @@
                                     {% endfor %}
                                 </div>
                                 <hr>
-                                <p>{{ poll|average|safe }}</p>
+                                <p>{{ poll|statistic:user.pk|safe }}</p>
                             {% endif %}
                         </div>
                         <br>
